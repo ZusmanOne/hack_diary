@@ -1,6 +1,7 @@
 import random
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from datacenter.models import Schoolkid, Chastisement, Lesson, Subject, Commendation
+from django.shortcuts import get_object_or_404
 
 
 def get_schoolkid(fullname):
@@ -10,14 +11,15 @@ def get_schoolkid(fullname):
     except ObjectDoesNotExist:
         print('Введенное имя не найдено')
     except MultipleObjectsReturned:
-        print('С таким именем найдено много детей, добавьте фамилию или отчество')
+        print('С таким именем найдено много детей, '
+              'добавьте фамилию или отчество')
 
 
 def fix_marks(kid_name):
     schoolkid = get_schoolkid(kid_name)
-    for bad_point in schoolkid.mark_set.filter(points__in=['2', '3']):
-        bad_point.points = '5'
-        bad_point.save()
+    for mark in schoolkid.mark_set.filter(points__in=['2', '3']):
+        mark.points = '5'
+        mark.save()
 
 
 def remove_chastisements(kid_name):
@@ -27,8 +29,9 @@ def remove_chastisements(kid_name):
 
 
 def create_commendation(kid_name, subject_title):
-    schoolkid = Schoolkid.objects.get(full_name__contains=kid_name)
-    subject = Subject.objects.get(title=subject_title, year_of_study=schoolkid.year_of_study)
+    schoolkid = get_schoolkid(kid_name)
+    subject = get_object_or_404(Subject, title=subject_title,
+                                year_of_study=schoolkid.year_of_study)
     schoolkid_lessons = Lesson.objects.filter(subject=subject.pk)
     compliment = ['Молодец!',
                   'Отлично!',
@@ -53,6 +56,8 @@ def create_commendation(kid_name, subject_title):
                   'Ты на верном пути!'
                   ]
     lesson_commendation = random.choice(schoolkid_lessons)
-    Commendation.objects.create(text=random.choice(compliment), created=lesson_commendation.date,
-                                schoolkid_id=schoolkid.pk, subject_id=subject.pk,
+    Commendation.objects.create(text=random.choice(compliment),
+                                created=lesson_commendation.date,
+                                schoolkid_id=schoolkid.pk,
+                                subject_id=subject.pk,
                                 teacher_id=lesson_commendation.teacher.pk)
