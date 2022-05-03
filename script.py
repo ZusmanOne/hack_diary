@@ -1,7 +1,10 @@
 import random
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
-from datacenter.models import Schoolkid, Chastisement, Lesson, Subject, Commendation
-from django.shortcuts import get_object_or_404
+from datacenter.models import Schoolkid
+from datacenter.models import Chastisement
+from datacenter.models import Lesson
+from datacenter.models import Subject
+from datacenter.models import Commendation
 
 
 def get_schoolkid(fullname):
@@ -17,21 +20,29 @@ def get_schoolkid(fullname):
 
 def fix_marks(kid_name):
     schoolkid = get_schoolkid(kid_name)
+    if not schoolkid:
+        return None
     for mark in schoolkid.mark_set.filter(points__in=['2', '3']):
         mark.points = '5'
-        mark.save()
+        print(mark.schoolkid)
 
 
 def remove_chastisements(kid_name):
     schoolkid = get_schoolkid(kid_name)
-    schoolkid_chastisement = Chastisement.objects.filter(schoolkid=schoolkid.pk)
+    if not schoolkid:
+        return None
+    schoolkid_chastisement = Chastisement.objects.filter(
+                                                        schoolkid=schoolkid.pk
+                                                        )
     schoolkid_chastisement.delete()
 
 
 def create_commendation(kid_name, subject_title):
     schoolkid = get_schoolkid(kid_name)
-    subject = get_object_or_404(Subject, title=subject_title,
-                                year_of_study=schoolkid.year_of_study)
+    if not schoolkid:
+        return None
+    subject = Subject.objects.get(title=subject_title,
+                                  year_of_study=schoolkid.year_of_study)
     schoolkid_lessons = Lesson.objects.filter(subject=subject.pk)
     compliment = ['Молодец!',
                   'Отлично!',
